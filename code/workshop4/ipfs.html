@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ipfs</title>
+    <script src="bundle.js"></script>
+    <script>
+            ethereum.enable()
+            const Web3 = require('web3')
+            const web3 = new Web3(Web3.givenProvider)
+            const abi = [
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ipfsHash",
+				"type": "string"
+			}
+		],
+		"name": "addHash",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "ipfsHash",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+
+            const contractAddress = "0x7658fc4dac119bf7e3e9614804578c2285d7aa88"
+            const ipfsContract = new web3.eth.Contract(abi,contractAddress)
+        const IPFS = require('ipfs')
+        const Buffer = require('buffer') 
+        let node 
+        IPFS.create().then((res)=>{
+        node =res
+        })
+        console.log('IPFS node is ready')
+
+        async function store(){ 
+            let selectedFile = document.getElementById("source").files
+            if (selectedFile.length > 0) {
+                let fileToLoad = selectedFile[0]
+                let fileReader = new FileReader()
+
+                fileReader.onloadend = async function(fileLoadedEvent) {
+                    let uint8Array = fileLoadedEvent.target.result
+                    console.log("uint8Array=")
+                    console.log(uint8Array)
+                    let buff = Buffer.Buffer(fileLoadedEvent.target.result)
+                    console.log("buff=")
+                    console.log(buff)
+                    const res = await node.add(buff)//add buffer to ipfs
+                    console.log("res")
+                    console.log(res)
+                    let hash = res[0].hash
+                    let wallet = await web3.eth.getAccounts()
+                    ipfsContract.methods.addHash(hash).send({
+                        from: wallet[0]
+                    })
+
+
+                    let url = 'https://ipfs.io/ipfs/'+hash
+                    console.log('url =',url)
+                    document.getElementById('hash').value = hash
+                    document.getElementById('url').innerHTML = url
+                    document.getElementById('url').href = url
+                    document.getElementById('content').src= url
+                    let data = await node.cat(hash)
+                    console.log("data = ",data)
+
+		      //uint8Array is stored in variable uint8Array
+                };
+                
+                await fileReader.readAsArrayBuffer(fileToLoad)//read data as uint8Array
+            }
+        }
+ 
+        async function show(){
+        // let hash = document.getElementById('hash').value
+        let hash = await ipfsContract.methods.ipfsHash().call()
+        let url = 'https://ipfs.io/ipfs/'+hash
+        document.getElementById('url').innerHTML = url
+        document.getElementById('url').href = url
+        document.getElementById('content').src= url
+        let data = await node.cat(hash)
+        console.log("data = ",data)
+    }
+ 
+//let data = await node.cat("QmXFf5QLQi3DhbwyrgR7qH8tHAZcGyWtWtsBy6iij4B7aL")
+    </script>   
+</head>
+<body>
+        <h1>JS IPFS - Add data to IPFS from the browser</h1>
+        <input type="file" id="source"></input>
+        <button onclick="store()">add to ipfs</button>
+        <div>found in ipfs:</div>
+        <input type="text" id="hash" value="[ipfs hash]">
+        <button onclick="show()">show</button><br>
+        <a id="url">[ipfs url]</a>
+        <iframe id="content" width="100%" height="400">[ipfs content]</iframe> 
+</body>
+</html>

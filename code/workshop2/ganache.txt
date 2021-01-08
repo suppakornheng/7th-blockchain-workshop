@@ -1,0 +1,4 @@
+﻿**install**
+npm i -g ganache-cli
+**start**
+ganache-cli -m "month apology submit inside oyster into evidence example among future slot guide" --db "C:\frontend\db"

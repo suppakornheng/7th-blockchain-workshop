@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>eth</title>
+    <script src="bundle.js"></script>
+    <script>
+        const Web3 = require('web3')
+        //ethereum.enable().then(x=>{console.log(x)})
+        const web3 = new Web3(Web3.givenProvider)
+ 
+        const contractABI =[
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "a",
+		"outputs": [
+			{
+				"internalType": "bytes",
+				"name": "",
+				"type": "bytes"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_dataURL",
+				"type": "string"
+			}
+		],
+		"name": "set",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "clear",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "dataURL",
+		"outputs": [
+			{
+				"internalType": "bytes",
+				"name": "",
+				"type": "bytes"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+        const contractAddress="0x408a568a9503e5b8c218e77752f1eb4e96a1793e"
+        const byteContract = new web3.eth.Contract(contractABI,contractAddress)
+        async function store(){ 
+            let selectedFile = document.getElementById("source").files
+            if (selectedFile.length > 0) {
+                let fileToLoad = selectedFile[0]
+                let fileReader = new FileReader()
+
+                fileReader.onloadend = async function(fileLoadedEvent) {
+                    let dataURL = fileLoadedEvent.target.result
+                    console.log("dataURL",dataURL)
+                    let dataURLSlice = dataURL.match(/.{1,500}/g)
+                    console.log("dataURLSlice",dataURLSlice)
+                    for(let i=0;i<dataURLSlice.length;i++){
+                        let wallet = await web3.eth.getAccounts()
+                        let latestNonce = await web3.eth.getTransactionCount(wallet[0])
+                        let estimateGas = await byteContract.methods.set(dataURLSlice[i]).estimateGas({from: wallet[0]})
+                        let tx = {
+                                    nonce: latestNonce,
+                                    gasPrice: web3.utils.toHex(web3.utils.toWei('1', 'gwei')),
+                                    gas: web3.utils.toHex((estimateGas + 1000)),
+                                    to: contractAddress,
+                                    value: "",
+                                    data: byteContract.methods.set(dataURLSlice[i]).encodeABI()
+                                }
+                        let privateKey = "0x92bdb1add582770c9a16d5ffc1be99ef655e338d9ca02035c1d30e7b032b6846"//*******************
+                        let signedTx = await web3.eth.accounts.signTransaction(tx,privateKey)
+                        let res = await web3.eth.sendSignedTransaction(signedTx.rawTransaction)
+                        console.log(res)
+                        let dataURLFromBlockchain = await byteContract.methods.dataURL().call()
+                        let hexURL = dataURLFromBlockchain.slice(2,dataURLFromBlockchain.length)// remove 0x
+                        let url = ""
+                        for (let i = 0; i < hexURL.length; i += 2) {
+                            url += String.fromCharCode(parseInt(hexURL.substr(i, 2), 16));
+                        }
+                        console.log('url =',url)
+                        document.getElementById('url').innerHTML = url
+                        document.getElementById('url').href = url
+                        document.getElementById('content').src= url
+
+                    }
+
+                };
+                
+                fileReader.readAsDataURL(fileToLoad)//read data as dataURL
+            }
+        }
+          async function show(){
+            let dataURLFromBlockchain = await byteContract.methods.dataURL().call()
+            let hexURL = dataURLFromBlockchain.slice(2,dataURLFromBlockchain.length)// remove 0x
+            let url = ""
+            for (let i = 0; i < hexURL.length; i += 2) {
+                url += String.fromCharCode(parseInt(hexURL.substr(i, 2), 16));
+            }
+            console.log('url =',url)
+            document.getElementById('url').innerHTML = url
+            document.getElementById('url').href = url
+            document.getElementById('content').src= url
+        }
+ 
+
+    </script>
+
+</head>
+<body>
+        <h1>ETH - Add data to Ethereum from the browser</h1>
+        <input type="file" id="source"></input>
+        <button onclick="store()">add to ETH</button>
+        <div>index</div>
+        <input type="number" id="index" value="">
+        <button onclick="show()">show</button><br>
+        <a id="url">[data url]</a>
+        <iframe id="content" width="100%" height="400">[data content]</iframe>
+    
+    
+</body>
+</html>

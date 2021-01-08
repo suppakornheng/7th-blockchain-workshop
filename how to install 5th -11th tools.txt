@@ -1,0 +1,14 @@
+npm i -g node-gyp
+npm i -g browserify
+npm i -g http-server
+
+*******เปิด command promt as administrator******
+npm i -g windows-build-tools
+***********************************************
+
+*******โฟลเดอร์ frontend************************
+npm init
+npm i web3
+npm i ipfs
+npm i buffer
+***********************************************

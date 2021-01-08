@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.34/dist/web3.min.js" charset="utf-8" type="text/javascript"></script>        
+    <script type="text/javascript">
+        let style =  "<style>        table {        font-family: arial, sans-serif;        border-collapse: collapse;        width: 100%;        }        td, th {        border: 1px solid #dddddd;        text-align: left;        padding: 8px;        } th{background-color: #dddddd}        tr:nth-child(even) {        background-color: #dddddd;        }    </style>";
+        const web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider('http://localhost:8545') , null, {});
+        let mytable='';
+        
+        window.onload = function(){//solve thank to https://stackoverflow.com/questions/9967496/how-can-i-clear-the-screen-with-javascript
+            //get blockNumber
+            let blockNumber;
+            mytable += "<table><thead><tr><th>Number</th><th>Tx#</th><th>Size</th><th>Timestamp</tr></thead><tbody><tr>";        
+            web3.eth.getBlockNumber().then((res)=>{
+                //console.log(res);
+                let getblock_promise =[];
+                for (let i = 0; i < res; i++) {
+                    let aaa = web3.eth.getBlock(i).then().catch(console.log);
+                    getblock_promise.push(aaa);
+                }
+                return Promise.all(getblock_promise);//solve thank to https://stackoverflow.com/questions/38572767/for-loop-in-promise-then
+            }).then((res)=>{
+                    //console.log(res);
+                    //console.log(res.length);
+                for(let i = res.length-1; i >= 0; i--){
+                        mytable += "<td><button onclick=\"showBlockData("+res[i].number+")\">"+res[i].number +"</button></td>";
+                        mytable += "<td>" + res[i].transactions.length + "</td>";
+                        mytable += "<td>" + res[i].size + "</td>";
+                        mytable += "<td>" + res[i].timestamp + "</td>";
+                        mytable += "</tr><tr>"; 
+                }                 
+                mytable += "</tr></tbody></table>"; 
+                document.write(style);
+                document.write(mytable);
+                document.close();
+            }).catch(console.log);
+        }
+
+        function showBlockData(blockNumber){
+            document.body.innerHTML="";
+            console.log(blockNumber);
+            web3.eth.getBlock(blockNumber)
+            .then((res)=>{
+                document.write(style);
+                let keys = Object.keys(res); // return an arrays of keys /length =22
+                let blocktable = "<table><thead><tr><th>Summary</th></tr></thead><tbody>";
+                for(i=0;i<keys.length;i++){// solve thank to https://travishorn.com/building-json2table-turn-json-into-an-html-table-a57cf642b84a
+                    blocktable += "<tr><td>"+ keys[i] +"</td><td>" + res[keys[i]] + "</td></tr>";
+                }
+                blocktable += "</tbody></table>";
+                document.write("<button onclick=\"Back()\">back</button>");
+                document.write(blocktable);
+                document.close();
+            }
+            ).catch(console.log);
+        }
+        
+        function Back(){
+            document.body.innerHTML="";
+            document.write(style);
+            document.write(mytable);
+            document.close();
+        }
+
+    </script>
+</head>
+<body>
+</body>
+</html>

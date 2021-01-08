@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>lottery</title>
+    <script src="./bundle.js"></script>
+    <script>
+        ethereum.enable()
+        const Web3 = require('web3')
+        const web3 = new Web3(Web3.givenProvider)
+        const abi = [
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "copy",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_number",
+				"type": "uint256"
+			}
+		],
+		"name": "howManyLeft",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "price",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "lottery",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "sellCount",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_number",
+				"type": "uint256"
+			}
+		],
+		"name": "getOwner",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "contractOwner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_number",
+				"type": "uint256"
+			}
+		],
+		"name": "buyLottery",
+		"outputs": [],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_copy",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_price",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	}
+]
+        const contractAddress = "0x3dcb829bc3b965cca40352311b7d3e4ae85fa6d7"
+        const lotteryContract = new web3.eth.Contract(abi,contractAddress)
+
+        window.addEventListener('DOMContentLoaded', async function(event) {
+            let copy = await lotteryContract.methods.copy().call()
+            document.getElementById("showCopy").innerHTML = "Copy : "+copy
+            let contractOwner = await lotteryContract.methods.contractOwner().call()
+            document.getElementById("showContractOwner").innerHTML = "ContractOwner : "+contractOwner
+            let price = await lotteryContract.methods.price().call()
+            document.getElementById("showPrice").innerHTML = "Price : "+ price;
+        })
+
+        async function getOwner(){
+            let _number = document.getElementById("lottery").value;
+            let lotteryOwner = await lotteryContract.methods.getOwner(_number).call()
+            document.getElementById("output").innerHTML = "เจ้าของได้แก่"+ lotteryOwner
+        }
+        async function howManyLeft(){
+            let _number = document.getElementById("lottery").value;
+            let howManyLeft = await lotteryContract.methods.howManyLeft(_number).call()
+            document.getElementById("output").innerHTML = "หวยเหลือ"+ howManyLeft+"ใบ"
+        }
+        async function buyLottery(){
+            let _number = document.getElementById("lottery").value
+            let wallet = await web3.eth.getAccounts()
+            let price = await lotteryContract.methods.price().call()
+            lotteryContract.methods.buyLottery(_number).send({
+                from: wallet[0],
+                value: price
+            }).on('receipt', function(receipt){
+                console.log('receipt')
+                document.getElementById("output").innerHTML = "คุณได้ซื้อสลากหมายเลข"+ _number 
+            })
+            .on('error', function(error){
+                console.log(error)
+                document.getElementById("output").innerHTML = error
+            })
+
+        }
+    </script>
+</head>
+<body>
+    <div id="showContractOwner"></div>
+    <div id="showCopy"></div>
+    <div id="showPrice"></div> 
+    หมายเลขสลากกินแบ่ง: <input type="number" id="lottery"><br>
+    <button onclick="getOwner()">getOwner</button>
+    <button onclick="howManyLeft()">howManyLeft</button>
+    <button onclick="buyLottery()">buyLottery</button>
+    <div id="output"></div>   
+</body>
+</html>
